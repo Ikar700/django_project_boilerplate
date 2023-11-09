@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.shortcuts import reverse
+from django.utils import timezone
 from django.db import models
 
 CATEGORY_CHOICES = (("S", "Shirt"), ("Sw", "SportWear"), ("OW", "Outwear"))
@@ -29,22 +30,37 @@ class Item(models.Model):
             "slug": self.slug
         }
         )
+    
+    def get_add_to_cart_url(self):
+        return reverse("core:add-to-cart", kwargs={
+            "slug": self.slug
+        })
+    
+    def get_remove_from_cart_url(self):
+        return reverse("core:remove-from-cart", kwargs={
+            "slug": self.slug
+        })
 
 
 class OrderItem(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE)
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
-
+    quantity = models.IntegerField(default=1)
+    ordered = models.BooleanField(default=False)
+    
     def __str__(self):
-        return self.name
+        return f"{self.quantity} of {self.item.name}"
 
 
 class Order(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              on_delete=models.CASCADE)
-    ordered = models.BooleanField(default=False)
     items = models.ManyToManyField(OrderItem)
     start_date = models.DateTimeField(auto_now=True)
-    ordered_date = models.DateTimeField
+    ordered_date = models.DateTimeField(timezone.now())
+    ordered = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.name
+        return self.user.username
+
